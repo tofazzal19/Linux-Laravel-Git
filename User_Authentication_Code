@@ -1,0 +1,265 @@
+#####Controllers\CustomAuthController
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use App\Models\User;
+use Hash;
+use Session;
+
+
+
+class CustomAuthController extends Controller
+{
+    public function login(){
+
+      return view("auth.login");
+}
+
+    public function registration(){
+
+        return view( "auth.registration");
+
+}
+
+    public function registerUser(Request $request){
+
+      $request->validate([
+        'name'=>'required',
+        'email'=>'required|email',
+        'password'=>'required|min:6|max:12',
+
+      ]);
+
+      $user = new User();
+      $user->name = $request->name;
+      $user->email = $request->email;
+      $user->password = Hash::make($request->password);
+      $res = $user->save();
+
+       if($res){
+         return back()->with('success', 'You have registered successfuly');
+       }
+      else{
+        return back()->with('fail', 'Something Wrong');
+
+      }
+
+    }
+
+    public function loginUser(Request $request)
+    {
+
+      $request->validate([
+        
+        'email'=>'required|email|unique:users',
+        'password'=>'required|min:6|max:12',
+
+      ]);
+
+      $user = User::where('email', '=', $request->email)->first();
+      if($user)
+      {
+        if(Hash::check($request->password, $user->password))
+        {
+            $request->session()->put('loginId',$user->id);
+             return redirect('dashboard');
+        }
+        else
+        {return back()->with('fail', 'Password doesnot matches.');
+        
+        }
+        
+        }
+        
+        else
+        {return back()->with('fail', 'This mail  doesn not matches.');
+        
+      }
+   }
+
+   public function deshboard(){
+
+    return 'Welcome to our Dashboard';
+
+}
+
+}
+##model\user.php
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class User extends Model
+{
+    use HasFactory;
+}
+
+
+##Databse\migrate\user
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('users', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->string('email')->unique();
+            $table->string('password');
+            $table->timestamps();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('users');
+    }
+};
+
+##view\auth\login.blade
+
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <title>Custom Authentication</title>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
+  </head>
+  
+ <body> 
+    <div class="container">
+       <div class="row">
+         <div class="col-md-4 col-md-offset-4" style="margin: top 20px;">
+           <h4>Login<h4>
+             <hr>
+              <form action="{{rout('login-user')}}" method="post">
+                           @csrf
+                          <div class="form-group">
+                       <lebel for="email">Email</lebel> 
+                       <input type="text" class="form-control" placeholder="Enter Email"
+                       name="eamil" value="{{old('email')}}">
+                       <span class="text-danger">@error('email') {{$message}} @enderror</span>
+                       </div>
+                         <div class="form-group">
+                       <lebel for="password">Password</lebel>
+                       <input type="password" class="form-control" placeholder="Enter Password"
+                       name="password" value="{{old('password')}}">
+                       <span class="text-danger">@error('password') {{$message}} @enderror</span>
+                       </div class="form-group">
+                       <button class="btn btn-block btn-primary" type="submit">Login</button>
+                       <br>
+                       <a href="registration">New User!! Sing UP</a>
+                </form>
+
+            </div>
+
+          </div> 
+        </div>
+
+    </body>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4" crossorigin="anonymous"></script>
+ 
+</html>
+
+##view\auth\Registration.blade
+
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <title>Custom Authentication</title>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
+  </head>
+  
+ <body> 
+    <div class="container">
+       <div class="row">
+         <div class="col-md-4 col-md-offset-4" style="margin: top 20px;">
+           <h4>Registration<h4>
+             <hr>
+              <form action="{{route('register-user')}}" method="post">
+                @if (Session::has('success'))
+                  <div class="alart alart-success">{{Session::get('success')}}</div>
+                @endif
+                @if (Session::has('fail'))
+                  <div class="alart alart-danger">{{Session::get('fail')}}</div>
+                @endif
+                @csrf
+                    <div class="form-group">
+                       <lebel for="name">Full Name</lebel>
+                       <input type="text" class="form-control" placeholder="Enter Full Name"
+                       name="name" value="{{old('name')}}">
+                       <span class="text-danger">@error('name') {{$message}} @enderror</span>
+                       </div>
+                          <div class="form-group">
+                       <lebel for="email">Email</lebel>
+                       <input type="email" class="form-control" placeholder="Enter Email"
+                       name="email" value="{{old('email')}}">
+                       <span class="text-danger">@error('email') {{$message}} @enderror</span>
+                       </div>
+                         <div class="form-group">
+                       <lebel for="password">Password</lebel>
+                       <input type="password" class="form-control" placeholder="Enter Password"
+                       name="password" value="">
+                       <span class="text-danger">@error('password') {{$message}} @enderror</span>
+                       </div class="form-group">
+                       <button class="btn btn-block btn-primary" type="submit">Register</button>
+                       <br>
+                       <a href="login">Already Register!! Login Here</a>
+                </form>
+
+            </div>
+
+          </div> 
+        </div>
+
+    </body>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4" crossorigin="anonymous"></script>
+ 
+</html>
+
+
+##Route\web.php
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\CustomAuthController;
+
+Route::get('/', function () {
+    return view('welcome');
+});
+
+Route::get('/login',[CustomAuthController::class,'login']);
+Route::post('/registration',[CustomAuthController::class,'registration']);
+Route::post('/register-user',[CustomAuthController::class,'registerUser'])->name('register-user');
+Route::post('/login-user',[CustomAuthController::class,'loginUser'])->name('login-user');
+Route::get('/dashboard',[CustomAuthController::class,'dashboard']);
+
+
+
+##Apps
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3307
+DB_DATABASE=laravel-custom-auth
+DB_USERNAME=root
+DB_PASSWORD=
+
+
+
