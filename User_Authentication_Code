@@ -86,7 +86,7 @@ class CustomAuthController extends Controller
 }
 
 }
-##model\user.php
+##model\User.php
 <?php
 
 namespace App\Models;
@@ -100,7 +100,7 @@ class User extends Model
 }
 
 
-##Databse\migrate\user
+##Databse\migrate\user_table
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -246,7 +246,7 @@ Route::get('/', function () {
 });
 
 Route::get('/login',[CustomAuthController::class,'login']);
-Route::post('/registration',[CustomAuthController::class,'registration']);
+Route::get('/registration',[CustomAuthController::class,'registration']);
 Route::post('/register-user',[CustomAuthController::class,'registerUser'])->name('register-user');
 Route::post('/login-user',[CustomAuthController::class,'loginUser'])->name('login-user');
 Route::get('/dashboard',[CustomAuthController::class,'dashboard']);
